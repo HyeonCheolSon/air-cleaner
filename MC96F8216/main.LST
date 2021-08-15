@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MAIN                                                              08/11/2021 17:30:44 PAGE 1   
+C51 COMPILER V9.60.0.0   MAIN                                                              08/15/2021 18:58:05 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
@@ -24,204 +24,417 @@ line level    source
   15          unsigned int count;
   16          unsigned int period;
   17          
-  18          ////////////PWM////////////////
-  19          void controlPWM(int num)
-  20          {
-  21   1        if(num == 0)
-  22   1        {
-  23   2          T0DR = 0xFF;
-  24   2        }
-  25   1        else if(num == 1)
-  26   1        {
-  27   2          T0DR = 0x80;
-  28   2        }
-  29   1        else if(num == 2)
-  30   1        {
-  31   2          T0DR = 0x40;
-  32   2        }
-  33   1        else if(num == 3)
-  34   1        {
-  35   2          T0DR = 0x01;
-  36   2        }
-  37   1      }
-  38          //////////////////////////////////
-  39          
-  40          /////////////////////LED////////////
-  41          void onRED()
-  42          {
-  43   1        offBLUE();
-  44   1        offGREEN();
-  45   1        P1 |= 0x02;
-  46   1      
+  18          unsigned int led_switch = 0;
+  19          
+  20          ////////////PWM////////////////
+  21          void controlPWM(int num)
+  22          {
+  23   1        if(num == 0)
+  24   1        {
+  25   2          T0DR = 0xFF;
+  26   2        }
+  27   1        else if(num == 1)
+  28   1        {
+  29   2          T0DR = 0x67;
+  30   2        }
+  31   1        else if(num == 2)
+  32   1        {
+  33   2          T0DR = 0x4C;
+  34   2        }
+  35   1        else if(num == 3)
+  36   1        {
+  37   2          T0DR = 0x32;
+  38   2        }
+  39   1        else if(num == 4)
+  40   1        {
+  41   2          T0DR = 0x19;
+  42   2        }
+  43   1        else if(num == 5)
+  44   1        {
+  45   2          T0DR = 0x00;
+  46   2        }
   47   1      }
-  48          void offRED()
-  49          {
-  50   1        P1 &= 0xFD;
-  51   1      }
-  52          void onGREEN()
-  53          {
+  48          //////////////////////////////////
+  49          
+  50          /////////////////////LED////////////
+  51          void onRED()
+  52          {
+  53   1        offGREEN();
   54   1        offBLUE();
-  55   1        offRED();
-C51 COMPILER V9.60.0.0   MAIN                                                              08/11/2021 17:30:44 PAGE 2   
+  55   1        P1 |= 0x02;
+C51 COMPILER V9.60.0.0   MAIN                                                              08/15/2021 18:58:05 PAGE 2   
 
-  56   1        P1 |= 0x04;
-  57   1      }
-  58          void offGREEN()
-  59          {
-  60   1        P1 &= 0xFB;
-  61   1      }
-  62          void onBLUE()
-  63          {
-  64   1        offRED();
-  65   1        offGREEN();
-  66   1        P1 |= 0x08;
-  67   1      }
-  68          void offBLUE()
-  69          {
-  70   1        P1 &= 0xF7;
-  71   1      }
-  72          void onYELLOW()
-  73          {
-  74   1        for(i = 0; i < 2; i++)
-  75   1        {
-  76   2          if(i==0)
-  77   2          {
-  78   3            onRED();
-  79   3          }
-  80   2          else
-  81   2          {
-  82   3            onGREEN();
-  83   3          }
-  84   2        }
-  85   1      }
-  86          void onCYAN()
-  87          {
-  88   1        for(i = 0; i < 2; i++)
-  89   1        {
-  90   2          if(i==0)
-  91   2          {
-  92   3            onBLUE();
-  93   3          }
-  94   2          else
-  95   2          {
-  96   3            onGREEN();
-  97   3          }
-  98   2        }
-  99   1      }
- 100          
- 101          void onWHITE()
- 102          {
- 103   1        for(i = 0; i < 3; i++)
- 104   1        {
- 105   2          if(i==0)
- 106   2          {
- 107   3            onRED();
- 108   3          }
- 109   2          else if(i==1)
- 110   2          {
- 111   3            onGREEN();
- 112   3          }
- 113   2          else
- 114   2          {
- 115   3            onBLUE();
- 116   3          }
- 117   2        }
-C51 COMPILER V9.60.0.0   MAIN                                                              08/11/2021 17:30:44 PAGE 3   
+  56   1      }
+  57          void offRED()
+  58          {
+  59   1        P1 &= 0xFD;
+  60   1      }
+  61          void onGREEN()
+  62          {
+  63   1        offRED();
+  64   1        offBLUE();
+  65   1        P1 |= 0x04;
+  66   1      }
+  67          void offGREEN()
+  68          {
+  69   1        P1 &= 0xFB;
+  70   1      }
+  71          void onBLUE()
+  72          {
+  73   1        offRED();
+  74   1        offGREEN();
+  75   1        P1 |= 0x08;
+  76   1      }
+  77          void offBLUE()
+  78          {
+  79   1        P1 &= 0xF7;
+  80   1      }
+  81          void onYELLOW()
+  82          {
+  83   1        if(led_switch == 0)
+  84   1        {
+  85   2          onRED();
+  86   2        }
+  87   1        else
+  88   1        {
+  89   2          onGREEN();
+  90   2        }
+  91   1      }
+  92          void onMAGENTA()
+  93          {
+  94   1        if(led_switch == 0)
+  95   1        {
+  96   2          onRED();
+  97   2        }
+  98   1        else
+  99   1        {
+ 100   2          onBLUE();
+ 101   2        }
+ 102   1      }
+ 103          
+ 104          void onCYAN()
+ 105          {
+ 106   1        if(led_switch == 0)
+ 107   1        {
+ 108   2          onGREEN();
+ 109   2        }
+ 110   1        else
+ 111   1        {
+ 112   2          onBLUE();
+ 113   2        }
+ 114   1      }
+ 115          
+ 116          void onWHITE()
+ 117          {
+C51 COMPILER V9.60.0.0   MAIN                                                              08/15/2021 18:58:05 PAGE 3   
 
- 118   1      }
- 119          
- 120          ///////////////////////////////////
- 121          
- 122          ////////RELAY//////////////////////
- 123          void onRELAY()
- 124          {
- 125   1        P1 |= 0x20;
- 126   1        onRED();
- 127   1      }
- 128          void offRELAY()
- 129          {
- 130   1        P1 &= 0xDF;
- 131   1        onBLUE();
- 132   1      }
- 133          //////////////////////////////////////
+ 118   1        for(i = 0; i < 3; i++)
+ 119   1        {
+ 120   2          if(i==0)
+ 121   2          {
+ 122   3            onRED();
+ 123   3          }
+ 124   2          else if(i==1)
+ 125   2          {
+ 126   3            onGREEN();
+ 127   3          }
+ 128   2          else
+ 129   2          {
+ 130   3            onBLUE();
+ 131   3          }
+ 132   2        }
+ 133   1      }
  134          
- 135          void main()
- 136          {
- 137   1        cli();            // disable INT. during peripheral setting
- 138   1        port_init();      // initialize ports
- 139   1        clock_init();     // initialize operation clock
- 140   1        sei();            // enable INT.
- 141   1        
- 142   1        // TODO: add your main code here
- 143   1        T0CR = 0x90; // Timer 0 Control Register - PWM Mode P35
- 144   1        controlPWM(2);
- 145   1        while(1)
- 146   1        {
- 147   2          //onWHITE();
- 148   2          //P1 |= 0x0E;
- 149   2          //P3 = 0x20;
- 150   2          //controlPWM(1);
- 151   2          //controlPWM(2);
- 152   2          //controlPWM(3);
- 153   2          //controlPWM(1);
- 154   2        }
- 155   1      }
- 156          
- 157          //======================================================
- 158          // interrupt routines
- 159          //======================================================
- 160          
- 161          //======================================================
- 162          // peripheral setting routines
- 163          //======================================================
- 164          
- 165          void clock_init()
- 166          {
- 167   1        // internal RC clock (1.000000MHz)
- 168   1        // Nothing to do for the default clock
- 169   1      }
- 170          
- 171          void port_init()
- 172          {
- 173   1        // initialize ports
- 174   1        P0IO = 0xFF;      // direction
- 175   1        P0PU = 0x00;      // pullup
- 176   1        P0OD = 0x00;      // open drain
- 177   1        P03DB = 0x00;     // bit7~6(debounce clock), bit5~0=P35,P06~02 debounce
- 178   1        P0   = 0x00;      // port initial value
- 179   1      
-C51 COMPILER V9.60.0.0   MAIN                                                              08/11/2021 17:30:44 PAGE 4   
+ 135          ///////////////////////////////////
+ 136          
+ 137          ////////RELAY//////////////////////
+ 138          void onRELAY()
+ 139          {
+ 140   1        P1 |= 0x20;
+ 141   1      }
+ 142          void offRELAY()
+ 143          {
+ 144   1        P1 &= 0xDF;
+ 145   1      }
+ 146          //////////////////////////////////////
+ 147          
+ 148          void delay_10us()
+ 149          {
+ 150   1        _nop_(); _nop_(); _nop_(); _nop_(); _nop_();
+ 151   1        _nop_(); _nop_(); _nop_(); _nop_(); 
+ 152   1      }
+ 153          
+ 154          void delay_sec(int num)
+ 155          {
+ 156   1        int i22;
+ 157   1        int j22;
+ 158   1        
+ 159   1        for(j22 = 0; j22 < num ; j22++)
+ 160   1          for(i22 = 0 ; i22<25000 ; i22++)
+ 161   1            delay_10us();
+ 162   1        
+ 163   1      }
+ 164          unsigned int led_color = 9;
+ 165          
+ 166          // T0 Interrupt///////////////
+ 167          void TIMER0_Int() interrupt 13
+ 168          {
+ 169   1        if(led_switch == 0)
+ 170   1        {
+ 171   2          led_switch = 1;
+ 172   2        }
+ 173   1        else
+ 174   1        {
+ 175   2          led_switch = 0;
+ 176   2        }
+ 177   1        if(led_color == 0)
+ 178   1        {
+ 179   2          onRED();
+C51 COMPILER V9.60.0.0   MAIN                                                              08/15/2021 18:58:05 PAGE 4   
 
- 180   1        P1IO = 0xFF;      // direction
- 181   1        P1PU = 0x00;      // pullup
- 182   1        P1OD = 0x00;      // open drain
- 183   1        P12DB = 0x00;     // debounce : P23~20, P13~10
- 184   1        P1   = 0x00;      // port initial value
- 185   1      
- 186   1        P2IO = 0xFF;      // direction
- 187   1        P2PU = 0x00;      // pullup
- 188   1        P2OD = 0x00;      // open drain
- 189   1        P2   = 0x00;      // port initial value
- 190   1      
- 191   1        P3IO = 0xFF;      // direction
- 192   1        P3PU = 0x00;      // pullup
- 193   1        P3OD = 0x00;      // open drain
- 194   1        P3   = 0x00;      // port initial value
- 195   1      
- 196   1        // Set port functions
- 197   1        P0FSR = 0x00;     // P0 selection
- 198   1        P1FSRH = 0x00;    // P1 selection High
- 199   1        P1FSRL = 0x00;    // P1 selection Low
- 200   1        P2FSR = 0x00;     // P2 selection
- 201   1        P3FSR = 0x20;     // P3 selection P35 pwm mode
- 202   1      }
- 203          
+ 180   2        }
+ 181   1        else if(led_color == 1)
+ 182   1        {
+ 183   2          onYELLOW();
+ 184   2        }
+ 185   1        else if(led_color == 2)
+ 186   1        {
+ 187   2          onGREEN();
+ 188   2        }
+ 189   1        else if(led_color == 3)
+ 190   1        {
+ 191   2          onCYAN();
+ 192   2        }
+ 193   1        else if(led_color == 4)
+ 194   1        {
+ 195   2          onBLUE();
+ 196   2        }
+ 197   1        else if(led_color == 5)
+ 198   1        {
+ 199   2          onMAGENTA();
+ 200   2        }
+ 201   1      }
+ 202          ///////////////////////////
+ 203          int tmp;
+ 204          void main()
+ 205          {
+ 206   1        cli();            // disable INT. during peripheral setting
+ 207   1        port_init();      // initialize ports
+ 208   1        //clock_init();     // initialize operation clock
+ 209   1        UART_init();
+ 210   1        sei();            // enable INT.
+ 211   1        
+ 212   1        // TODO: add your main code here
+ 213   1        T0CR = 0x92; // Timer 0 Control Register - PWM Mode P35
+ 214   1        
+ 215   1        //T1CRH = 0x80;
+ 216   1        //T1CRL = 0x20; // Timer 1 Low Control Register
+ 217   1        
+ 218   1        //offRED();
+ 219   1        //offGREEN();
+ 220   1        //offBLUE();
+ 221   1        //onRELAY();
+ 222   1        //controlPWM(0);
+ 223   1        IE2 = 0x02;
+ 224   1        
+ 225   1        tmp = 0xFF;
+ 226   1        T0CR = 0x92;
+ 227   1      
+ 228   1        //T1CRL = 0x00;
+ 229   1        //T1CRH = 0x00;
+ 230   1        //T2CRL = 0x00;
+ 231   1        //T2CRH = 0x00;
+ 232   1        
+ 233   1        //P1FSRL = 0x00;
+ 234   1        //P1FSRH = 0x00;
+ 235   1        
+ 236   1        // P3FSR = 0x00;
+ 237   1        
+ 238   1        //T1ADRH = 0x00;
+ 239   1        ////T1ADRL = 0x00;
+ 240   1        //T1BDRH = 0x00;
+ 241   1        //T1BDRL = 0x00;
+C51 COMPILER V9.60.0.0   MAIN                                                              08/15/2021 18:58:05 PAGE 5   
+
+ 242   1        
+ 243   1        //T2ADRH = 0x00;
+ 244   1        //T2ADRL = 0x00;
+ 245   1        //T2BDRH = 0x00;
+ 246   1        //T2BDRL = 0x00;
+ 247   1        
+ 248   1        // offRELAY();
+ 249   1        
+ 250   1        // P3 = 0x20;
+ 251   1      //  led_color = 3;
+ 252   1      //  controlPWM(1);// red
+ 253   1      //  led_color = 0;
+ 254   1      //  delay_sec(20);
+ 255   1      //  controlPWM(2);
+ 256   1      //  led_color = 1;// yellow
+ 257   1      //  delay_sec(20);
+ 258   1      //  controlPWM(3);
+ 259   1      //  led_color =2; // green
+ 260   1      //  delay_sec(20);
+ 261   1      //  controlPWM(4);
+ 262   1      //  led_color = 3; // cyan
+ 263   1      //  delay_sec(20);
+ 264   1        
+ 265   1      //  controlPWM(3);
+ 266   1      //  led_color = 2; // green
+ 267   1      //  delay_sec(20);
+ 268   1      //  controlPWM(2);
+ 269   1      //  led_color = 1; // yellow
+ 270   1      //  delay_sec(20);
+ 271   1          UARTDR = 0xFF;
+ 272   1        while(1)
+ 273   1        {
+ 274   2          // red 0
+ 275   2          // yellow 1
+ 276   2          // green 2
+ 277   2          // cyan 3 
+ 278   2          // blue 4
+ 279   2          // magenta 5
+ 280   2          switch (UARTDR)
+ 281   2          {
+ 282   3          case 0x1F: // air condition GOOD scenario
+ 283   3            controlPWM(0);
+ 284   3            led_color = 3; //cyan
+ 285   3            offRELAY();
+ 286   3            break;
+ 287   3          case 0x2F: // air condition SOSO scenario
+ 288   3            controlPWM(1);
+ 289   3            led_color = 2; // green
+ 290   3            onRELAY();
+ 291   3            break;
+ 292   3          case 0x3F: // air condition BAD scenario
+ 293   3            controlPWM(3);
+ 294   3            led_color = 1; // yellow
+ 295   3            onRELAY();
+ 296   3            break;
+ 297   3          case 0x4F: // air condition VERY BAD scenario
+ 298   3            controlPWM(5);
+ 299   3            led_color = 0; // red
+ 300   3            onRELAY();
+ 301   3            break;
+ 302   3          case 0x01: 
+ 303   3            led_color = 0; // red
+C51 COMPILER V9.60.0.0   MAIN                                                              08/15/2021 18:58:05 PAGE 6   
+
+ 304   3            break;
+ 305   3          case 0x02: 
+ 306   3            led_color = 2; // green
+ 307   3            break;
+ 308   3          case 0x03: 
+ 309   3            led_color = 4; // blue
+ 310   3            break;
+ 311   3          case 0x04: 
+ 312   3            led_color = 3; // cyan
+ 313   3            break;
+ 314   3          case 0x05: 
+ 315   3            led_color = 1; // yellow
+ 316   3            break;
+ 317   3          case 0x06: 
+ 318   3            led_color = 5; // magenta
+ 319   3            break;
+ 320   3          
+ 321   3          case 0x11: 
+ 322   3            controlPWM(0); // 0% duration
+ 323   3            break;
+ 324   3          case 0x12: 
+ 325   3            controlPWM(1); // 60% duration
+ 326   3            break;
+ 327   3          case 0x13: 
+ 328   3            controlPWM(2); // 70% duration
+ 329   3            break;
+ 330   3          case 0x14: 
+ 331   3            controlPWM(3); // 80% duration
+ 332   3            break;
+ 333   3          case 0x15: 
+ 334   3            controlPWM(4); // 90% duration
+ 335   3            break;
+ 336   3          case 0x16: 
+ 337   3            controlPWM(5); // 100% duration
+ 338   3            break;
+ 339   3          
+ 340   3          case 0x21: 
+ 341   3            onRELAY(); // relay on
+ 342   3            break;
+ 343   3          case 0x22: 
+ 344   3            offRELAY(); // relay off
+ 345   3            break;
+ 346   3          }
+ 347   2        }
+ 348   1      }
+ 349          
+ 350          //======================================================
+ 351          // interrupt routines
+ 352          //======================================================
+ 353          
+ 354          //======================================================
+ 355          // peripheral setting routines
+ 356          //======================================================
+ 357          
+ 358          void clock_init()
+ 359          {
+ 360   1        // internal RC clock (1.000000MHz)
+ 361   1        // Nothing to do for the default clock
+ 362   1      }
+ 363          
+ 364          void UART_init()
+ 365          {
+C51 COMPILER V9.60.0.0   MAIN                                                              08/15/2021 18:58:05 PAGE 7   
+
+ 366   1        // initialize UART interface
+ 367   1        // ASync. 9615bps N 8 1
+ 368   1        UARTCR2 = 0x02;   // activate UART
+ 369   1        UARTCR1 = 0x06;   // bit count, parity
+ 370   1        UARTCR2 |= 0x0D;  // interrupt, speed
+ 371   1        UARTCR3 = 0x00;   // stop bit
+ 372   1        UARTBD = 0x10;    // baud rate
+ 373   1        UARTST=0x60;    //UDRE TXC RXC WAKE SOFTRST DOR FE PE 
+ 374   1        // 0x40
+ 375   1      }
+ 376          
+ 377          void port_init()
+ 378          {
+ 379   1        // initialize ports
+ 380   1        P0IO = 0xFF;      // direction
+ 381   1        P0PU = 0x00;      // pullup
+ 382   1        P0OD = 0x00;      // open drain
+ 383   1        P03DB = 0x00;     // bit7~6(debounce clock), bit5~0=P35,P06~02 debounce
+ 384   1        P0   = 0x00;      // port initial value
+ 385   1      
+ 386   1        P1IO = 0xFF;      // direction
+ 387   1        P1PU = 0x00;      // pullup
+ 388   1        P1OD = 0x00;      // open drain
+ 389   1        P12DB = 0x00;     // debounce : P23~20, P13~10
+ 390   1        P1   = 0x00;      // port initial value
+ 391   1      
+ 392   1        P2IO = 0xFF;      // direction
+ 393   1        P2PU = 0x00;      // pullup
+ 394   1        P2OD = 0x00;      // open drain
+ 395   1        P2   = 0x00;      // port initial value
+ 396   1      
+ 397   1        P3IO = 0xFD;      // direction
+ 398   1        P3PU = 0x00;      // pullup
+ 399   1        P3OD = 0x00;      // open drain
+ 400   1        P3   = 0x00;      // port initial value
+ 401   1      
+ 402   1        // Set port functions
+ 403   1        P0FSR = 0x00;     // P0 selection
+ 404   1        P1FSRH = 0x00;    // P1 selection High
+ 405   1        P1FSRL = 0x00;    // P1 selection Low
+ 406   1        P2FSR = 0x00;     // P2 selection
+ 407   1        // P3FSR = 0x00;    // P3 selection P35 GPIO mode
+ 408   1        P3FSR = 0x20;     // P3 selection P35 pwm mode
+ 409   1      }
+ 410          
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    343    ----
+   CODE SIZE        =    808    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =      8    ----
+   XDATA SIZE       =     14    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----

@@ -4,7 +4,7 @@
 
 void port_init();             	// initialize ports
 void clock_init();            	// initialize operation clock
-
+void UART_init();								// initialize UART port
 /////////LED///////////////////
 void onRED();
 void offRED();

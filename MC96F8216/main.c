@@ -15,6 +15,8 @@ unsigned int p;
 unsigned int count;
 unsigned int period;
 
+unsigned int led_switch = 0;
+
 ////////////PWM////////////////
 void controlPWM(int num)
 {
@@ -24,15 +26,23 @@ void controlPWM(int num)
 	}
 	else if(num == 1)
 	{
-		T0DR = 0x80;
+		T0DR = 0x67;
 	}
 	else if(num == 2)
 	{
-		T0DR = 0x40;
+		T0DR = 0x4C;
 	}
 	else if(num == 3)
 	{
-		T0DR = 0x01;
+		T0DR = 0x32;
+	}
+	else if(num == 4)
+	{
+		T0DR = 0x19;
+	}
+	else if(num == 5)
+	{
+		T0DR = 0x00;
 	}
 }
 //////////////////////////////////
@@ -40,10 +50,9 @@ void controlPWM(int num)
 /////////////////////LED////////////
 void onRED()
 {
-	offBLUE();
 	offGREEN();
+	offBLUE();
 	P1 |= 0x02;
-
 }
 void offRED()
 {
@@ -51,8 +60,8 @@ void offRED()
 }
 void onGREEN()
 {
-	offBLUE();
 	offRED();
+	offBLUE();
 	P1 |= 0x04;
 }
 void offGREEN()
@@ -71,30 +80,36 @@ void offBLUE()
 }
 void onYELLOW()
 {
-	for(i = 0; i < 2; i++)
+	if(led_switch == 0)
 	{
-		if(i==0)
-		{
-			onRED();
-		}
-		else
-		{
-			onGREEN();
-		}
+		onRED();
+	}
+	else
+	{
+		onGREEN();
 	}
 }
+void onMAGENTA()
+{
+	if(led_switch == 0)
+	{
+		onRED();
+	}
+	else
+	{
+		onBLUE();
+	}
+}
+
 void onCYAN()
 {
-	for(i = 0; i < 2; i++)
+	if(led_switch == 0)
 	{
-		if(i==0)
-		{
-			onBLUE();
-		}
-		else
-		{
-			onGREEN();
-		}
+		onGREEN();
+	}
+	else
+	{
+		onBLUE();
 	}
 }
 
@@ -123,34 +138,212 @@ void onWHITE()
 void onRELAY()
 {
 	P1 |= 0x20;
-	onRED();
 }
 void offRELAY()
 {
 	P1 &= 0xDF;
-	onBLUE();
 }
 //////////////////////////////////////
 
+void delay_10us()
+{
+	_nop_(); _nop_(); _nop_(); _nop_(); _nop_();
+	_nop_(); _nop_(); _nop_(); _nop_(); 
+}
+
+void delay_sec(int num)
+{
+	int i22;
+	int j22;
+	
+	for(j22 = 0; j22 < num ; j22++)
+		for(i22 = 0 ; i22<25000 ; i22++)
+			delay_10us();
+	
+}
+unsigned int led_color = 9;
+
+// T0 Interrupt///////////////
+void TIMER0_Int() interrupt 13
+{
+	if(led_switch == 0)
+	{
+		led_switch = 1;
+	}
+	else
+	{
+		led_switch = 0;
+	}
+	if(led_color == 0)
+	{
+		onRED();
+	}
+	else if(led_color == 1)
+	{
+		onYELLOW();
+	}
+	else if(led_color == 2)
+	{
+		onGREEN();
+	}
+	else if(led_color == 3)
+	{
+		onCYAN();
+	}
+	else if(led_color == 4)
+	{
+		onBLUE();
+	}
+	else if(led_color == 5)
+	{
+		onMAGENTA();
+	}
+}
+///////////////////////////
+int tmp;
 void main()
 {
 	cli();          	// disable INT. during peripheral setting
 	port_init();    	// initialize ports
-	clock_init();   	// initialize operation clock
+	//clock_init();   	// initialize operation clock
+	UART_init();
 	sei();          	// enable INT.
 	
 	// TODO: add your main code here
-	T0CR = 0x90; // Timer 0 Control Register - PWM Mode P35
-	controlPWM(2);
+	T0CR = 0x92; // Timer 0 Control Register - PWM Mode P35
+	
+	//T1CRH = 0x80;
+	//T1CRL = 0x20; // Timer 1 Low Control Register
+	
+	//offRED();
+	//offGREEN();
+	//offBLUE();
+	//onRELAY();
+	//controlPWM(0);
+	IE2 = 0x02;
+	
+	tmp = 0xFF;
+	T0CR = 0x92;
+
+	//T1CRL = 0x00;
+	//T1CRH = 0x00;
+	//T2CRL = 0x00;
+	//T2CRH = 0x00;
+	
+	//P1FSRL = 0x00;
+	//P1FSRH = 0x00;
+	
+	// P3FSR = 0x00;
+	
+	//T1ADRH = 0x00;
+	////T1ADRL = 0x00;
+	//T1BDRH = 0x00;
+	//T1BDRL = 0x00;
+	
+	//T2ADRH = 0x00;
+	//T2ADRL = 0x00;
+	//T2BDRH = 0x00;
+	//T2BDRL = 0x00;
+	
+	// offRELAY();
+	
+	// P3 = 0x20;
+//	led_color = 3;
+//	controlPWM(1);// red
+//	led_color = 0;
+//	delay_sec(20);
+//	controlPWM(2);
+//	led_color = 1;// yellow
+//	delay_sec(20);
+//	controlPWM(3);
+//	led_color =2; // green
+//	delay_sec(20);
+//	controlPWM(4);
+//	led_color = 3; // cyan
+//	delay_sec(20);
+	
+//	controlPWM(3);
+//	led_color = 2; // green
+//	delay_sec(20);
+//	controlPWM(2);
+//	led_color = 1; // yellow
+//	delay_sec(20);
+		UARTDR = 0xFF;
 	while(1)
 	{
-		//onWHITE();
-		//P1 |= 0x0E;
-		//P3 = 0x20;
-		//controlPWM(1);
-		//controlPWM(2);
-		//controlPWM(3);
-		//controlPWM(1);
+		// red 0
+		// yellow 1
+		// green 2
+		// cyan 3 
+		// blue 4
+		// magenta 5
+		switch (UARTDR)
+		{
+		case 0x1F: // air condition GOOD scenario
+			controlPWM(0);
+			led_color = 3; //cyan
+			offRELAY();
+			break;
+		case 0x2F: // air condition SOSO scenario
+			controlPWM(1);
+			led_color = 2; // green
+			onRELAY();
+			break;
+		case 0x3F: // air condition BAD scenario
+			controlPWM(3);
+			led_color = 1; // yellow
+			onRELAY();
+			break;
+		case 0x4F: // air condition VERY BAD scenario
+			controlPWM(5);
+			led_color = 0; // red
+			onRELAY();
+			break;
+		case 0x01: 
+			led_color = 0; // red
+			break;
+		case 0x02: 
+			led_color = 2; // green
+			break;
+		case 0x03: 
+			led_color = 4; // blue
+			break;
+		case 0x04: 
+			led_color = 3; // cyan
+			break;
+		case 0x05: 
+			led_color = 1; // yellow
+			break;
+		case 0x06: 
+			led_color = 5; // magenta
+			break;
+		
+		case 0x11: 
+			controlPWM(0); // 0% duration
+			break;
+		case 0x12: 
+			controlPWM(1); // 60% duration
+			break;
+		case 0x13: 
+			controlPWM(2); // 70% duration
+			break;
+		case 0x14: 
+			controlPWM(3); // 80% duration
+			break;
+		case 0x15: 
+			controlPWM(4); // 90% duration
+			break;
+		case 0x16: 
+			controlPWM(5); // 100% duration
+			break;
+		
+		case 0x21: 
+			onRELAY(); // relay on
+			break;
+		case 0x22: 
+			offRELAY(); // relay off
+			break;
+		}
 	}
 }
 
@@ -166,6 +359,19 @@ void clock_init()
 {
 	// internal RC clock (1.000000MHz)
 	// Nothing to do for the default clock
+}
+
+void UART_init()
+{
+	// initialize UART interface
+	// ASync. 9615bps N 8 1
+	UARTCR2 = 0x02; 	// activate UART
+	UARTCR1 = 0x06; 	// bit count, parity
+	UARTCR2 |= 0x0D;	// interrupt, speed
+	UARTCR3 = 0x00; 	// stop bit
+	UARTBD = 0x10;  	// baud rate
+	UARTST=0x60;	  //UDRE TXC RXC WAKE SOFTRST DOR FE PE 
+  // 0x40
 }
 
 void port_init()
@@ -188,7 +394,7 @@ void port_init()
 	P2OD = 0x00;    	// open drain
 	P2   = 0x00;    	// port initial value
 
-	P3IO = 0xFF;    	// direction
+	P3IO = 0xFD;    	// direction
 	P3PU = 0x00;    	// pullup
 	P3OD = 0x00;    	// open drain
 	P3   = 0x00;    	// port initial value
@@ -198,6 +404,7 @@ void port_init()
 	P1FSRH = 0x00;  	// P1 selection High
 	P1FSRL = 0x00;  	// P1 selection Low
 	P2FSR = 0x00;   	// P2 selection
+	// P3FSR = 0x00;   	// P3 selection P35 GPIO mode
 	P3FSR = 0x20;   	// P3 selection P35 pwm mode
 }
 
