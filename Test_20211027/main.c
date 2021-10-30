@@ -26,11 +26,11 @@ void controlPWM(int num)
 	}
 	else if(num == 1)
 	{
-		T0DR = 0x9C;
+		T0DR = 0x8C; // 55%
 	}
 	else if(num == 2)
 	{
-		T0DR = 0xB5;
+		T0DR = 0xA6;
 	}
 	else if(num == 3)
 	{
@@ -210,10 +210,28 @@ void TIMER0_Int() interrupt 13
 		offGREEN();
 	}
 }
-int tmp;
+int tmp = 0x00;
+int tmp_old = 0x00;
+int tmp_count = 0;
+int ctrl_variable = 0x00;
 void UARTRX_Int() interrupt 9
 {
+	tmp_old = tmp;
 	tmp = UARTDR;
+	
+	//if(tmp == tmp_old)
+	//{
+	//	tmp_count += 1;
+	//	if(tmp_count == 2)
+	//	{
+	//		ctrl_variable = tmp;
+	//		tmp_count = 0;
+	//	}
+	//}
+	//else if(tmp != tmp_old)
+	//{
+	//	tmp_count = 0;
+	//}
 	
 	P3FSR |= 0x01;
 	UARTDR = tmp;
@@ -310,16 +328,15 @@ void main()
 		//tmp = UARTDR;
 		
 		//UARTDR = tmp;
-		
 		switch (tmp)
 		{
 		case 0xF1: // air condition GOOD scenario
-			controlPWM(0);
+			controlPWM(1);
 			led_color = 3; //cyan
-			offRELAY();
+			onRELAY();
 			break;
 		case 0xF2: // air condition SOSO scenario
-			controlPWM(1);
+			controlPWM(2);
 			led_color = 2; // green
 			onRELAY();
 			break;
@@ -329,7 +346,7 @@ void main()
 			onRELAY();
 			break;
 		case 0xF4: // air condition VERY BAD scenario
-			controlPWM(5);
+			controlPWM(4);
 			led_color = 0; // red
 			onRELAY();
 			break;
@@ -379,11 +396,12 @@ void main()
 		//	offRELAY(); // relay off
 		//	break;
 		}
-		if(UARTDR > 0x00 && UARTDR < 0x65)
+		/*
+		if(tmp > 0x00 && tmp < 0x65)
 		{
-			controlMotor(UARTDR);
+			controlMotor(tmp);
 		}
-		
+		*/
 	}
 }
 
@@ -409,7 +427,7 @@ void UART_init()
 	UARTCR1 = 0x06; 	// bit count, parity
 	UARTCR2 |= 0x2F;	// interrupt, speed
 	UARTCR3 = 0x00; 	// stop bit
-	UARTBD = 0x0C;  	// baud rate
+	UARTBD = 0x1D;  	// baud rate 1D
 	UARTST=0x60;	  //UDRE TXC RXC WAKE SOFTRST DOR FE PE 
   // 0x40
 }

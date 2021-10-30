@@ -130,9 +130,12 @@ int image_select = 0;
 int current_pan = 1;
 int sensitivity = 0;
 
+int gui_update = 30;
+
 String outside_pm25;
 String outside_pm10;
 int dust_state = 0;
+int outside_dust_state = 0;
 
 int t_mon = 0;
 int t_year = 0;
@@ -193,7 +196,7 @@ void loop()
     touchDisplaySet();
     updatecount ++;
     delay(100);
-    if (updatecount == 60 && image_select != 0)
+    if (updatecount == 100)
     {
       updatecount = 0;
       checkDust(); 
@@ -211,80 +214,102 @@ void loop()
       else if(image_select == 1)
       {
         tft.setTextSize(5);
-        tft.setTextColor(TFT_GREEN);
+        tft.setTextColor(TFT_BLACK);
         tft.setCursor(230, 160);
         tft.println(current_pan);
       }
       if(image_select == 2)
       {
-        // 내부
-        tft.setTextSize(2);
-        tft.setTextColor(TFT_GREEN);
-        tft.setCursor(87, 101);
-        tft.println("PM1.0");
-    
-        tft.setCursor(156, 101);
-        tft.println(PM1_0);
-    
-        tft.setCursor(87, 130);
-        tft.println("PM2.5");
-    
-        tft.setCursor(156, 130);
-        tft.println(PM2_5);
-    
-        tft.setCursor(87, 160);
-        tft.println("PM10");
-        
-    
-        tft.setCursor(156, 160);
-        tft.println(PM10);
-        // 외부
-        tft.setCursor(298, 130);
-        tft.println("PM2.5");
-    
-        tft.setCursor(367, 130);
-        tft.println(outside_pm25);
-    
-        tft.setCursor(298, 160);
-        tft.println("PM10");
-    
-        tft.setCursor(367, 160);
-        tft.println(outside_pm10);
-
-        // 상태
-        if(dust_state == 0)
+        if(gui_update == 50)
         {
-          tft.setCursor(120, 188);
-          tft.println("GOOD");
+          setBackground();
+          // 내부
+          tft.setTextSize(2);
+          tft.setTextColor(TFT_BLACK);
+          tft.setCursor(87, 101);
+          tft.println("PM1.0");
+      
+          tft.setCursor(156, 101);
+          tft.println(PM1_0);
+      
+          tft.setCursor(87, 130);
+          tft.println("PM2.5");
+      
+          tft.setCursor(156, 130);
+          tft.println(PM2_5);
+      
+          tft.setCursor(87, 160);
+          tft.println("PM10");
+          
+      
+          tft.setCursor(156, 160);
+          tft.println(PM10);
+          // 외부
+          tft.setCursor(298, 130);
+          tft.println("PM2.5");
+      
+          tft.setCursor(367, 130);
+          tft.println(outside_pm25);
+      
+          tft.setCursor(298, 160);
+          tft.println("PM10");
+      
+          tft.setCursor(367, 160);
+          tft.println(outside_pm10);
+  
+          // 상태
+          if(dust_state == 0)
+          {
+            tft.setCursor(120, 188);
+            tft.println("GOOD");
+  
+            
+          }
+          else if(dust_state == 1)
+          {
+            tft.setCursor(116, 188);
+            tft.println("NORMAL");
+  
+            
+          }
+          else if(dust_state == 2)
+          {
+            tft.setCursor(120, 188);
+            tft.println("BAD");
+  
+            
+          }
+          else if(dust_state == 3)
+          {
+            tft.setCursor(110, 188);
+            tft.println("VERY BAD");
+  
+            
+          }
 
-          tft.setCursor(330, 188);
-          tft.println("GOOD");
+          if(outside_dust_state == 0)
+          {
+            tft.setCursor(330, 188);
+            tft.println("GOOD");
+          }
+          else if(outside_dust_state == 1)
+          {
+            tft.setCursor(326, 188);
+            tft.println("NORMAL");
+          }
+          else if(outside_dust_state == 2)
+          {
+            tft.setCursor(330, 188);
+            tft.println("BAD");
+          }
+          else if(outside_dust_state == 3)
+          {
+            tft.setCursor(320, 188);
+            tft.println("VERY BAD");
+          }
+          gui_update = 0;
         }
-        else if(dust_state == 1)
-        {
-          tft.setCursor(116, 188);
-          tft.println("NORMAL");
-
-          tft.setCursor(326, 188);
-          tft.println("NORMAL");
-        }
-        else if(dust_state == 2)
-        {
-          tft.setCursor(120, 188);
-          tft.println("BAD");
-
-          tft.setCursor(330, 188);
-          tft.println("BAD");
-        }
-        else if(dust_state == 3)
-        {
-          tft.setCursor(110, 188);
-          tft.println("VERY BAD");
-
-          tft.setCursor(320, 188);
-          tft.println("VERY BAD");
-        }
-        
+        gui_update++;
       }
     }
   
@@ -389,6 +414,7 @@ void touchDisplaySet()
         else if (pos[0] > 257 && pos[0] < 334)
         {
           image_select = 2;
+          airPollution();
           setBackground();    
         }
         else if (pos[0] > 365 && pos[0] < 440)
@@ -440,8 +466,9 @@ void touchDisplaySet()
       {
         if (pos[0] > 39 && pos[0] < 228) // pan setting
         {
-          image_select = 0;
+          image_select = 3;
           setBackground();    
+          show_log(3);
         }
         else if (pos[0] > 252 && pos[0] < 441) // power setting
         {
@@ -980,12 +1007,13 @@ void checkDust()
 
 void ABOVBoard_init()
 {
-  ABOVBoard.begin(9600);
+  ABOVBoard.begin(4800);
 }
 
 void checkABOVBoard(byte sendData)
 {
   byte tempSendData = 0x2F;
+  byte checkdata = 0x00;
   
   ABOVBoard.write(sendData);
 
@@ -995,8 +1023,14 @@ void checkABOVBoard(byte sendData)
   {
     if (checkcount == 10)
       break;
+
+    if(ABOVBoard.available())
+    {
+      checkdata = ABOVBoard.read();
       
-    byte checkdata = ABOVBoard.read();
+    }
+    Serial.println(checkcount);
+    Serial.println(sendData);
     Serial.println(checkdata);
     
     if (checkdata == sendData)
@@ -1126,7 +1160,22 @@ void airPollution()
 
       outside_pm10 = payload.substring(start_point + 11, end_point);
       outside_pm25 = payload.substring(start_point_2 + 11, end_point_2);
-      
+      if ( ((outside_pm10.toInt() >= 0 ) && (outside_pm10.toInt() < 30 ))) // good
+      {
+         outside_dust_state = 0;
+      }
+      else if ( ((outside_pm10.toInt() >= 30 ) && (outside_pm10.toInt() < 80 ))) // good
+      {
+         outside_dust_state = 1;
+      }
+      else if ( ((outside_pm10.toInt() >= 80 ) && (outside_pm10.toInt() < 150 ))) // good
+      {
+         outside_dust_state = 2;
+      }
+      else if (outside_pm10.toInt() >= 150) // good
+      {
+         outside_dust_state = 3;
+      }
 //      tft.fillRect(160, 160, 160, 160, TFT_WHITE);
 //      tft.setCursor(180, 180);
 //      tft.println("PM10");
@@ -1590,7 +1639,7 @@ void show_log(int cmd_type)
     //tft.fillRect(160, 160, 160, 160, TFT_WHITE);
     tft.setTextColor(TFT_RED);
     tft.setTextSize(2);
-    tft.setCursor(180, 180);
+    tft.setCursor(224, 186);
 
     switch (cmd_type)
     {
@@ -1603,8 +1652,8 @@ void show_log(int cmd_type)
           volume++;
           
           //tft.println("Air Volume: ");
-          tft.setCursor(180, 210);      
-          //tft.println(volume);
+          tft.setCursor(224, 186);      
+          tft.println(volume);
           
           checkAbovPWM();
           
