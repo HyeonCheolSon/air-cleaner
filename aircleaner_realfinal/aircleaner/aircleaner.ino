@@ -89,8 +89,20 @@ static lv_obj_t * mbox_connect;
 static lv_obj_t * gauge;
 static lv_obj_t * label_status;
 
-
-
+void write_log(fs::FS &fs, String text)
+{
+  SPI_ON_SD;
+  File sd_log = fs.open("/log.txt", "a");
+  unsigned long readTime = millis()/1000;
+      
+  int sec = readTime%60;
+  int m_min = (readTime/60)%60;
+  int hour = (readTime/(60*60))%24; 
+  String mytime = String(hour) + ":" + String(m_min) + ":" + String(sec) + ": ";
+  sd_log.println(mytime + text);
+  sd_log.close();
+  SPI_OFF_SD;
+}
 
 
 struct LGFX_Config
@@ -127,8 +139,11 @@ int endwday = -1;
 bool initWashFlag = true;
 int wifiFlag = 0;
 int image_select = 0;
-int current_pan = 1;
+int current_pan = 0;
 int sensitivity = 0;
+int reservation = -1;
+unsigned long reserved_time = 0;
+int power_flag = 1;
 
 int gui_update = 30;
 
@@ -186,6 +201,8 @@ void setup()
    
 }
 
+
+
 void loop()
 {
   if (conn == 1)
@@ -202,7 +219,17 @@ void loop()
       checkDust(); 
       sendDustValue();
     }
-   
+    if(reserved_time > 0)
+    {
+      unsigned long compare_time = millis();
+      if(compare_time - reserved_time > reservation * 360000)
+      {
+        tft.fillScreen(TFT_BLACK);
+        checkABOVBoard((byte)0xA0);
+        power_flag = 0;
+        reserved_time = 0;
+      }
+    }
     if ((stage==0))
     {
       
@@ -216,14 +243,14 @@ void loop()
         tft.setTextSize(5);
         tft.setTextColor(TFT_BLACK);
         tft.setCursor(230, 160);
-        tft.println(current_pan);
+        // tft.println(current_pan);
       }
       if(image_select == 2)
       {
         if(gui_update == 50)
         {
           setBackground();
-          // 내부
+
           tft.setTextSize(2);
           tft.setTextColor(TFT_BLACK);
           tft.setCursor(87, 101);
@@ -256,8 +283,7 @@ void loop()
       
           tft.setCursor(367, 160);
           tft.println(outside_pm10);
-  
-          // 상태
+
           if(dust_state == 0)
           {
             tft.setCursor(120, 188);
@@ -283,29 +309,7 @@ void loop()
           {
             tft.setCursor(110, 188);
             tft.println("VERY BAD");
-  
-            
-          }
 
-          if(outside_dust_state == 0)
-          {
-            tft.setCursor(330, 188);
-            tft.println("GOOD");
-          }
-          else if(outside_dust_state == 1)
-          {
-            tft.setCursor(326, 188);
-            tft.println("NORMAL");
-          }
-          else if(outside_dust_state == 2)
-          {
-            tft.setCursor(330, 188);
-            tft.println("BAD");
-          }
-          else if(outside_dust_state == 3)
-          {
-            tft.setCursor(320, 188);
-            tft.println("VERY BAD");
           }
           gui_update = 0;
         }
@@ -343,9 +347,11 @@ void loop()
     ESP.restart();
     Serial.println("in3");
     
-    
   }
+  
 }
+
+
 
 bool checkDateWash()
 {
@@ -367,9 +373,39 @@ void setBackground()
     if(image_select == 0)
       print_img(SD, "/1.bmp", 480, 320);
     else if(image_select == 1)
-      print_img(SD, "/2.bmp", 480, 320);
+    {
+      if(current_pan == 2)
+        print_img(SD, "/2_2.bmp", 480, 320);
+      else if(current_pan == 3)
+        print_img(SD, "/2_3.bmp", 480, 320);
+      else if(current_pan == 4)
+        print_img(SD, "/2_4.bmp", 480, 320);
+      else if(current_pan == 5)
+        print_img(SD, "/2_5.bmp", 480, 320);
+      else if(current_pan == 6)
+        print_img(SD, "/2_6.bmp", 480, 320);
+      else if(current_pan == 7)
+        print_img(SD, "/2_7.bmp", 480, 320);
+      else if(current_pan == 8)
+        print_img(SD, "/2_8.bmp", 480, 320);
+      else if(current_pan == 9)
+        print_img(SD, "/2_9.bmp", 480, 320);
+      else if(current_pan == 10)
+        print_img(SD, "/2_10.bmp", 480, 320);
+      else
+        print_img(SD, "/2_1.bmp", 480, 320);
+    }
     else if(image_select == 2)
-      print_img(SD, "/3.bmp", 480, 320);
+    {
+      if(dust_state == 1)
+        print_img(SD, "/3_2.bmp", 480, 320);
+      else if(dust_state == 2)
+        print_img(SD, "/3_3.bmp", 480, 320);
+      else if(dust_state == 3)
+        print_img(SD, "/3_4.bmp", 480, 320);
+      else
+        print_img(SD, "/3_1.bmp", 480, 320);
+    }
     else if(image_select == 3)
       print_img(SD, "/4.bmp", 480, 320);
   }
@@ -377,11 +413,108 @@ void setBackground()
     //print_img(SD, "/test.bmp", 480, 320);
     
   else if (stage == 1)// setting
-    //print_img(SD, "/setting.bmp", 480, 320);
-    print_img(SD, "/3.bmp", 480, 320);
+  {
+    if(reservation == 1)
+    {
+      print_img(SD, "/5_1.bmp", 480, 320);
+    }
+    else if(reservation == 2)
+    {
+      print_img(SD, "/5_2.bmp", 480, 320);
+    }
+    else if(reservation == 3)
+    {
+      print_img(SD, "/5_3.bmp", 480, 320);
+    }
+    else if(reservation == 4)
+    {
+      print_img(SD, "/5_4.bmp", 480, 320);
+    }
+    else if(reservation == 5)
+    {
+      print_img(SD, "/5_5.bmp", 480, 320);
+    }
+    else if(reservation == 6)
+    {
+      print_img(SD, "/5_6.bmp", 480, 320);
+    }
+    else if(reservation == 7)
+    {
+      print_img(SD, "/5_7.bmp", 480, 320);
+    }
+    else if(reservation == 8)
+    {
+      print_img(SD, "/5_8.bmp", 480, 320);
+    }
+    else if(reservation == 9)
+    {
+      print_img(SD, "/5_9.bmp", 480, 320);
+    }
+    else if(reservation == 10)
+    {
+      print_img(SD, "/5_10.bmp", 480, 320);
+    }
+    else if(reservation == 11)
+    {
+      print_img(SD, "/5_11.bmp", 480, 320);
+    }
+    else if(reservation == 12)
+    {
+      print_img(SD, "/5_12.bmp", 480, 320);
+    }
+    else if(reservation == 13)
+    {
+      print_img(SD, "/5_13.bmp", 480, 320);
+    }
+    else if(reservation == 14)
+    {
+      print_img(SD, "/5_14.bmp", 480, 320);
+    }
+    else if(reservation == 15)
+    {
+      print_img(SD, "/5_15.bmp", 480, 320);
+    }
+    else if(reservation == 16)
+    {
+      print_img(SD, "/5_16.bmp", 480, 320);
+    }
+    else if(reservation == 17)
+    {
+      print_img(SD, "/5_17.bmp", 480, 320);
+    }
+    else if(reservation == 18)
+    {
+      print_img(SD, "/5_18.bmp", 480, 320);
+    }
+    else if(reservation == 19)
+    {
+      print_img(SD, "/5_19.bmp", 480, 320);
+    }
+    else if(reservation == 20)
+    {
+      print_img(SD, "/5_20.bmp", 480, 320);
+    }
+    else if(reservation == 21)
+    {
+      print_img(SD, "/5_21.bmp", 480, 320);
+    }
+    else if(reservation == 22)
+    {
+      print_img(SD, "/5_22.bmp", 480, 320);
+    }
+    else if(reservation == 23)
+    {
+      print_img(SD, "/5_23.bmp", 480, 320);
+    }
+    else if(reservation == 24)
+    {
+      print_img(SD, "/5_24.bmp", 480, 320);
+    }
+  }
+    
 
-  else if (stage == 2) // calender
-    tft.fillScreen(TFT_WHITE);
+//  else if (stage == 2) // calender
+//    tft.fillScreen(TFT_WHITE);
   
   else if (stage == 3) // wash
     print_img(SD, "/3.bmp", 480, 320);
@@ -395,85 +528,104 @@ void setBackground()
 }
 
 
+
 void touchDisplaySet()
 {
   if (stage == 0)
   {
-    if (226 < pos[1] && pos[1] < 310)
+    if (225 < pos[1] && pos[1] < 307)
     {
-        if (pos[0] > 43 && pos[0] < 120)
+        if (pos[0] > 43 && pos[0] < 120) // power off
         {
-          image_select = 0;
-          setBackground();    
+          if(image_select == 0)
+          {
+            
+            tft.fillScreen(TFT_BLACK);
+           
+            checkABOVBoard((byte)0xA0);
+            power_flag = 0;
+            stage = 2;
+            write_log(SD, "clicked button-power off");
+          }
+          else
+          {
+            write_log(SD, "clicked button-power on/off page");
+            image_select = 0;
+            setBackground();
+          }
         }
-        else if (pos[0] > 149 && pos[0] < 226)
+        else if (pos[0] > 149 && pos[0] < 226) // pan power
         {
           image_select = 1;
-          setBackground();    
+          
+          current_pan++;
+          
+          
+          if(current_pan > 10)
+          {
+            current_pan = 1;
+          }
+          if(current_pan == 1)
+            checkABOVBoard((byte)0xB1);
+          else if(current_pan == 1)
+            checkABOVBoard((byte)0xB2);
+          else if(current_pan == 1)
+            checkABOVBoard((byte)0xB3);
+          else if(current_pan == 1)
+            checkABOVBoard((byte)0xB4);
+          else if(current_pan == 1)
+            checkABOVBoard((byte)0xB5);
+          else if(current_pan == 1)
+            checkABOVBoard((byte)0xB6);
+          else if(current_pan == 1)
+            checkABOVBoard((byte)0xB7);
+          else if(current_pan == 1)
+            checkABOVBoard((byte)0xB8);
+          else if(current_pan == 1)
+            checkABOVBoard((byte)0xB9);
+          else if(current_pan == 1)
+            checkABOVBoard((byte)0xBA);
+          
+          write_log(SD, "clicked button-pan power " + String(current_pan));
+          setBackground();
         }
-        else if (pos[0] > 257 && pos[0] < 334)
+        else if (pos[0] > 257 && pos[0] < 334) // sensor value
         {
           image_select = 2;
-          airPollution();
+          if(wifiFlag != -1)
+          {
+            airPollution();
+          }
           setBackground();    
+          write_log(SD, "clicked button-sensor value page");
         }
-        else if (pos[0] > 365 && pos[0] < 440)
+        else if (pos[0] > 365 && pos[0] < 440) // setting
         {
           image_select = 3;
-          setBackground();    
+          setBackground();
+          write_log(SD, "clicked button-sensor value");
         }
     }
     if(image_select == 3)
     {
-      if (66 < pos[1] && pos[1] < 109)
+      if (90 < pos[1] && pos[1] < 203)
       {
-        if (pos[0] > 39 && pos[0] < 228) // wifi setting
+        if (pos[0] > 93 && pos[0] < 215) // wifi setting
         {
           ESP.restart();
+          write_log(SD, "clicked button-wifi setting");
         }
-        else if (pos[0] > 252 && pos[0] < 441) // sensor setting
+        else if (pos[0] > 275 && pos[0] < 381) // power setting
         {
-          if(sensitivity == 0)
-          {
-            tft.setTextSize(2);
-            tft.setTextColor(TFT_RED);
-            setBackground();
-            tft.setCursor(142, 176);
-            tft.print("Sensitivity: LOW");
-            sensitivity++;
-          }
-          else if(sensitivity == 1)
-          {
-            tft.setTextSize(2);
-            tft.setTextColor(TFT_RED);
-            setBackground();
-            tft.setCursor(142, 176);
-            tft.print("Sensitivity: MID");
-            sensitivity++;
-          }
-          else if(sensitivity == 2)
-          {
-            tft.setTextSize(2);
-            tft.setTextColor(TFT_RED);
-            setBackground();
-            tft.setCursor(142, 176);
-            tft.print("Sensitivity: HIGH");
-            sensitivity = 0;
-          }
-        }
-      }
-      else if (120 < pos[1] && pos[1] < 162)
-      {
-        if (pos[0] > 39 && pos[0] < 228) // pan setting
-        {
-          image_select = 3;
-          setBackground();    
-          show_log(3);
-        }
-        else if (pos[0] > 252 && pos[0] < 441) // power setting
-        {
-          image_select = 1;
-          setBackground();    
+          stage = 1;
+          reservation = 1;
+          tft.setRotation(1);
+          SPI_OFF_TFT;
+          print_img(SD, "/5_0.bmp", 480, 320);
+          delay(1000);
+          SPI_ON_TFT;
+          setBackground();
+          write_log(SD, "clicked button-reservation time");
         }
       }
     }
@@ -481,187 +633,77 @@ void touchDisplaySet()
 
   else if (stage == 1) // menu
   {
-    //tft.setTextColor(TFT_BLACK);
-    //tft.setTextSize(3);
     
-    //tft.setCursor(130, 30);
-    //tft.println("Setting Menu");
-
-    delay(100);
-    Serial.printf("Home Atmospheric PM1.0 : %d,  PM2.5 : %d,  PM10 : %d  \r\n", PM1_0, PM2_5,PM10);
-
-    //tft.fillRect(160, 160, 160, 160, TFT_WHITE);
-    //tft.setCursor(80, 150);
-    //tft.println("Sensor info");
-    
-    //tft.setCursor(80, 180);
-    //tft.println("PM1.0");
-
-    //tft.setCursor(150, 180);
-    //tft.println(PM1_0);
-
-    //tft.setCursor(80, 210);
-    //tft.println("PM2.5");
-
-    //tft.setCursor(150, 210);
-    //tft.println(PM2_5);
-
-    //tft.setCursor(80, 240);
-    //tft.println("PM10");
-
-    //tft.setCursor(150, 240);
-    //tft.println(PM10);
-
-        
-    
-    if (100 < pos[1] && pos[1] < 220)
+    if (104 < pos[1] && pos[1] < 193)
     {
-        if (30 < pos[0] && pos[0] < 150)
+      if (pos[0] > 107 && pos[0] < 175) // reservation time <-
+      {
+        reservation--;
+        if(reservation < 1)
         {
-          /*
-          stage = 2;
-          setBackground();
-          drawCalendar(year, mon, 0);
-          */
+          reservation = 24;
         }
-                 
-        else if (180 < pos[0] && pos[0] < 300)
+        setBackground();
+        write_log(SD, "clicked button-reservation time reduced");
+      }
+      else if (pos[0] > 316 && pos[0] < 381) // reservation time ->
+      {
+        reservation++;
+        if(reservation > 24)
         {
-//          stage = 3;
-//          setBackground();
-//          draw_button();
-//          drawScheduledWash();
+          reservation = 1;
         }
-             
-        else if (330 < pos[0] && pos[0] < 450)
-        {
-          /*
-          stage = 4;
-          setBackground();
-          */
-        }
-          
+        setBackground();
+        write_log(SD, "clicked button-reservation time added");
+      }
     }
-
-    else if (250 < pos[1] && pos[1] < 300)
+    else if (225 < pos[1] && pos[1] < 304)
     {
-      if (40 < pos[0] && pos[0] < 80)
-        {
-          stage = 0;
-          setBackground();
-          draw_button();
-          drawConnect();
-        }
+      if (pos[0] > 152 && pos[0] < 228) // Home(back)
+      {
+        stage = 0;
+        image_select = 0;
+        reservation = -1;
+        reserved_time = 0;
+        setBackground();
+        write_log(SD, "clicked button-reservation page home");
+      }
+      else if (pos[0] > 316 && pos[0] < 381) // Set reservation
+      {
+        reserved_time = millis();
+        stage = 0;
+        setBackground();
+        write_log(SD, "clicked button-reservation page set");
+      }
     }
-        
-          
+    
   }
 
   else if (stage == 2)
   {
-    
-    
-  
-    if (0 < pos[1] && pos[1] < 35)
+    if (0 < pos[1])
     {
-        if (160 < pos[0] && pos[0] < 320)
-        {
-          stage = 1;
-          setBackground();
-        }
-        
-        else if (400 < pos[0] && pos[0] < 480)
-        {
-          setBackground();
-          //drawCalendar(t_year, t_mon+1, 1);
-        }
-          
-        else if (0 < pos[0] && pos[0] < 80)
-        {
-          setBackground();
-          //drawCalendar(t_year, t_mon-1, -1);
-        }
-          
-        
-    }
-
-
-    else if (35 < pos[1] && pos[1] < 275)
-    {
-        if (50 < pos[0] && pos[0] < 430)
-        {
-          int col = int((pos[0] - 50)/60);
-          int row = int((pos[1]-100)/35);
-
-          int clickDay = 7*row - startwday + col + 1;
-
-          if ((clickDay >0) && (clickDay <= days[t_mon - 1]))
-          {
-            tft.fillRect(200, 300, 60, 20, TFT_WHITE);
-            tft.setTextColor(TFT_BLACK);
-            tft.setTextSize(2);
-          
-            tft.setCursor(200, 300);
-            //tft.println(t_mon);
-          
-            tft.setCursor(230, 300);
-            //tft.println(clickDay);
-          
-
-          }
-        }
+      if (pos[0] > 0) // Home(back)
+      {
+        stage = 0;
+        image_select = 0;
+        power_flag = 1;
+        setBcakground();
+        write_log(SD, "clicked button-Turn on");
+      }
     }
   }
-
+  /*
   else if (stage == 3)
   {
-  
-    if (100 < pos[1] && pos[1] < 220)
-    {
-        
-        if (30 < pos[0] && pos[0] < 150)
-        {
-          updateScheduledWash(1);
-          drawScheduledWash();
-        }
-         
-        
-        else if (180 < pos[0] && pos[0] < 300)
-        {
-          updateScheduledWash(3);
-          drawScheduledWash();
-        }
-             
-        else if (330 < pos[0] && pos[0] < 450)
-        {
-          updateScheduledWash(6);
-          drawScheduledWash();
-        }
-          
-    }
-    
-    else if (250 < pos[1] && pos[1] < 300)
-    {
-      if (40 < pos[0] && pos[0] < 80)
-        {
-          stage = 1;
-          setBackground();
-        }
-    }  
+   
   }
   
   else if (stage == 4)
   {
-    if (160 < pos[0] && pos[0] < 320)
-    {
-        if (120 < pos[1] && pos[1] < 240)
-        {
-          stage = 1;
-          setBackground();
-        }   
-    }
+    
   }
-  
+  */
 }
 
 void drawScheduledWash()
@@ -1032,7 +1074,9 @@ void checkABOVBoard(byte sendData)
     Serial.println(checkcount);
     Serial.println(sendData);
     Serial.println(checkdata);
-    
+    write_log(SD, "Re-transmission count-" + String(checkcount));
+    write_log(SD, "TX-" + String(sendData));
+    write_log(SD, "RX-" + String(checkdata));
     if (checkdata == sendData)
     {
       Serial.println("success");
@@ -1050,44 +1094,44 @@ void checkABOVBoard(byte sendData)
 }
 void sendDustValue()
 {
-  if ( ((PM10 >= 0 ) && (PM10 < 30 )) || image_select == 0) // good
+  if(power_flag == 0)
   {
-     //tft.setCursor(180, 270);
-     //tft.println("GOOD");
-     dust_state = 0;
-     current_pan = 1;
-     checkABOVBoard((byte)0xF1);
+    Serial.println("power_flag 0 ");
   }
-
-  else if ( (PM10 >= 30 ) && (PM10 < 80 )) // soso
-   {
-     //tft.setCursor(180, 270);
-     //tft.println("SO SO");
-     dust_state = 1;
-     current_pan = 3;
-     checkABOVBoard((byte)0xF2);
-     
-  }
-  else if ( (PM10 >= 80 ) && (PM10 < 150 )) // bad
+  else
   {
-     //tft.setCursor(180, 270);
-     //tft.println("BAD");
-     dust_state = 2;
-     current_pan = 7;
-     checkABOVBoard((byte)0xF3);
-     
-  }
-  else if ( PM10 >= 150 ) // very bad
-   {
-     //tft.setCursor(180, 270);
-     //tft.println("VERY BAD");
-     dust_state = 3;
-     current_pan = 10;
-     checkABOVBoard((byte)0xF4);
-  }
+    if ( ((PM10 >= 0 ) && (PM10 < 30 )) || image_select == 0) // good
+    {
+       //tft.setCursor(180, 270);
+       //tft.println("GOOD");
+       dust_state = 0;
+       checkABOVBoard((byte)0xF1);
+    }
   
-  else if ( PM10 == -1 ) // power on
-     checkABOVBoard((byte)0xF0);
+    else if ( (PM10 >= 30 ) && (PM10 < 80 )) // soso
+     {
+       //tft.setCursor(180, 270);
+       //tft.println("SO SO");
+       dust_state = 1;
+       checkABOVBoard((byte)0xF2);
+       
+    }
+    else if ( (PM10 >= 80 ) && (PM10 < 150 )) // bad
+    {
+       //tft.setCursor(180, 270);
+       //tft.println("BAD");
+       dust_state = 2;
+       checkABOVBoard((byte)0xF3);
+       
+    }
+    else if ( PM10 >= 150 ) // very bad
+     {
+       //tft.setCursor(180, 270);
+       //tft.println("VERY BAD");
+       dust_state = 3;
+       checkABOVBoard((byte)0xF4);
+    }
+  }
   
 }
 void checkAbovPWM()
@@ -1278,7 +1322,7 @@ void wifi_init()
        tft.setCursor(70, 10);
        tft.println("Cannot connect wifi");
     
-       tft.setCursor(20, 100);
+       tft.setCursor(10, 100);
        tft.println("Do you want to setup wifi?");
     
        tft.setCursor(100, 220);
@@ -1318,7 +1362,7 @@ void wifi_init()
         tft.setRotation(1);
         SPI_OFF_TFT;
         delay(10);
-        print_img(SD, "/test.bmp", 480, 320);
+        print_img(SD, "/1.bmp", 480, 320);
         SPI_ON_TFT;
         delay(1000);
         tft.setRotation(3);
@@ -1532,7 +1576,8 @@ int setWifi(fs::FS &fs)
     String wifiPwFile = "/wifiPw.txt";
     
     SPI_ON_SD;
-
+    File fas = fs.open("/log.txt", "w");
+    fas.close();
     File f = fs.open(wifiIdFile, "r");
     if (!f)
     {
