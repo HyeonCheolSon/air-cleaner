@@ -16,9 +16,9 @@ unsigned int count;
 unsigned int period;
 
 unsigned int led_switch = 0;
-
+int temp_pwm = 0x00;
 ////////////PWM////////////////
-void controlPWM(int num)
+void controlPWM(int num, int pan_power)
 {
 	if(num == 0)
 	{
@@ -26,19 +26,22 @@ void controlPWM(int num)
 	}
 	else if(num == 1)
 	{
-		T0DR = 0x8C; // 55%
+		temp_pwm = 0x8C;
+		T0DR = temp_pwm + 2 * pan_power;
 	}
 	else if(num == 2)
 	{
-		T0DR = 0xA6;
+		temp_pwm = 0xB0;
+		T0DR = temp_pwm + 2 * pan_power;
 	}
 	else if(num == 3)
 	{
-		T0DR = 0xCE;
+		temp_pwm = 0xE3;
+		T0DR = temp_pwm + 2 * pan_power;
 	}
 	else if(num == 4)
 	{
-		T0DR = 0xE7;
+		temp_pwm = 0xFF;
 	}
 	else if(num == 5)
 	{
@@ -210,13 +213,15 @@ void TIMER0_Int() interrupt 13
 		offGREEN();
 	}
 }
+
+/////////////////////////
 int tmp = 0x00;
-int tmp_old = 0x00;
 int tmp_count = 0;
-int ctrl_variable = 0x00;
+int auto_flag = 0;
+
 void UARTRX_Int() interrupt 9
 {
-	tmp_old = tmp;
+	// tmp_old = tmp;
 	tmp = UARTDR;
 	
 	//if(tmp == tmp_old)
@@ -232,12 +237,21 @@ void UARTRX_Int() interrupt 9
 	//{
 	//	tmp_count = 0;
 	//}
+	if(tmp == 0xC0)
+	{
+		auto_flag = 0;
+	}
+	else if(tmp == 0xD0)
+	{
+		auto_flag = 1;
+	}
 	
 	P3FSR |= 0x01;
 	UARTDR = tmp;
 }
 ///////////////////////////
-
+int pwm_ctrl;
+int pan_power;
 void main()
 {
 	cli();          	// disable INT. during peripheral setting
@@ -309,6 +323,8 @@ void main()
 		UARTDR = 0xFF;
 		T0DR = 0x00;
 		led_color = 4;
+		pwm_ctrl = 0;
+		pan_power = 0;
 	while(1)
 	{
 		
@@ -326,30 +342,114 @@ void main()
 		// magenta 5
 		//controlPWM(4);
 		//tmp = UARTDR;
+		// A0 : off
 		
 		//UARTDR = tmp;
-		switch (tmp)
+		if(auto_flag == 0)
 		{
-		case 0xF1: // air condition GOOD scenario
-			controlPWM(1);
-			led_color = 3; //cyan
-			onRELAY();
-			break;
-		case 0xF2: // air condition SOSO scenario
-			controlPWM(2);
-			led_color = 2; // green
-			onRELAY();
-			break;
-		case 0xF3: // air condition BAD scenario
-			controlPWM(3);
-			led_color = 1; // yellow
-			onRELAY();
-			break;
-		case 0xF4: // air condition VERY BAD scenario
-			controlPWM(4);
-			led_color = 0; // red
-			onRELAY();
-			break;
+			switch (tmp)
+			{
+			case 0xF1: // air condition GOOD scenario
+				pwm_ctrl = 1;
+				controlPWM(1, pan_power);
+				led_color = 3; //cyan
+				onRELAY();
+				tmp = 0x00;
+				break;
+			case 0xF2: // air condition SOSO scenario
+				pwm_ctrl = 2;
+				controlPWM(2, pan_power);
+				led_color = 2; // green
+				onRELAY();
+				tmp = 0x00;
+				break;
+			case 0xF3: // air condition BAD scenario
+				pwm_ctrl = 3;
+				controlPWM(3, pan_power);
+				led_color = 1; // yellow
+				onRELAY();
+				tmp = 0x00;
+				break;
+			case 0xF4: // air condition VERY BAD scenario
+				pwm_ctrl = 4;
+				controlPWM(4, pan_power);
+				led_color = 0; // red
+				onRELAY();
+				tmp = 0x00;
+				break;
+			case 0xB1:
+				pan_power = 0;
+				controlPWM(pwm_ctrl, pan_power);
+				tmp = 0x00;
+				break;
+			case 0xB2:
+				pan_power = 1;
+				controlPWM(pwm_ctrl, pan_power);
+				tmp = 0x00;
+				break;
+			case 0xB3:
+				pan_power = 2;
+				controlPWM(pwm_ctrl, pan_power);
+				tmp = 0x00;
+				break;
+			case 0xB4:
+				pan_power = 3;
+				controlPWM(pwm_ctrl, pan_power);
+				tmp = 0x00;
+				break;
+			case 0xB5:
+				pan_power = 4;
+				controlPWM(pwm_ctrl, pan_power);
+				tmp = 0x00;
+				break;
+			case 0xB6:
+				pan_power = 5;
+				controlPWM(pwm_ctrl, pan_power);
+				tmp = 0x00;
+				break;
+			case 0xB7:
+				pan_power = 6;
+				controlPWM(pwm_ctrl, pan_power);
+				tmp = 0x00;
+				break;
+			case 0xB8:
+				pan_power = 7;
+				controlPWM(pwm_ctrl, pan_power);
+				tmp = 0x00;
+				break;
+			case 0xB9:
+				pan_power = 8;
+				controlPWM(pwm_ctrl, pan_power);
+				tmp = 0x00;
+				break;
+			case 0xBA:
+				pan_power = 9;
+				controlPWM(pwm_ctrl, pan_power);
+				tmp = 0x00;
+				break;
+			
+			case 0xA0:
+				pwm_ctrl = 0;
+				controlPWM(0, pan_power);
+				led_color = 99; // red
+				offRELAY();
+				tmp = 0x00;
+				break;
+			}
+		}
+		else
+		{
+			if(tmp > 0x00 && tmp < 0x65)
+			{
+				controlMotor(tmp);
+			}
+			else if(tmp == 0xA0)
+			{
+				controlPWM(0, pan_power);
+				led_color = 99; // red
+				offRELAY();
+			}
+		}
 		
 		/*
 		case 0x01: 
@@ -395,12 +495,8 @@ void main()
 		//case 0x22: 
 		//	offRELAY(); // relay off
 		//	break;
-		}
 		/*
-		if(tmp > 0x00 && tmp < 0x65)
-		{
-			controlMotor(tmp);
-		}
+		
 		*/
 	}
 }
